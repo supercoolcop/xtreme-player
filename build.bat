@@ -2,36 +2,31 @@
 REM Build script for Xtream IPTV Player on Windows
 REM This script helps build the app for iOS TestFlight using secure credentials
 
-REM Check if credentials file exists
-if not exist ".\credentials\apple.json" (
-  echo Error: credentials\apple.json not found!
-  echo Please create this file with your Apple credentials:
-  echo {
-  echo   "appleId": "YOUR_APPLE_ID_HERE",
-  echo   "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID_HERE",
-  echo   "appleTeamId": "YOUR_APPLE_TEAM_ID_HERE"
-  echo }
+REM Check if app-store.json file exists
+if not exist ".\app-store.json" (
+  echo Error: app-store.json not found!
+  echo Please make sure your app-store.json file exists with your Apple credentials
   exit /b 1
 )
 
 REM Load credentials from file using PowerShell
-for /f "tokens=*" %%a in ('powershell -Command "Get-Content .\credentials\apple.json | ConvertFrom-Json | Select-Object -ExpandProperty appleId"') do set APPLE_ID=%%a
-for /f "tokens=*" %%a in ('powershell -Command "Get-Content .\credentials\apple.json | ConvertFrom-Json | Select-Object -ExpandProperty ascAppId"') do set ASC_APP_ID=%%a
-for /f "tokens=*" %%a in ('powershell -Command "Get-Content .\credentials\apple.json | ConvertFrom-Json | Select-Object -ExpandProperty appleTeamId"') do set APPLE_TEAM_ID=%%a
+for /f "tokens=*" %%a in ('powershell -Command "Get-Content .\app-store.json | ConvertFrom-Json | Select-Object -ExpandProperty appleId"') do set APPLE_ID=%%a
+for /f "tokens=*" %%a in ('powershell -Command "Get-Content .\app-store.json | ConvertFrom-Json | Select-Object -ExpandProperty ascAppId"') do set ASC_APP_ID=%%a
+for /f "tokens=*" %%a in ('powershell -Command "Get-Content .\app-store.json | ConvertFrom-Json | Select-Object -ExpandProperty appleTeamId"') do set APPLE_TEAM_ID=%%a
 
 REM Check if credentials are valid
-if "%APPLE_ID%"=="YOUR_APPLE_ID_HERE" (
-  echo Error: Please update your Apple ID in credentials\apple.json
+if "%APPLE_ID%"=="" (
+  echo Error: Apple ID not found in app-store.json
   exit /b 1
 )
 
-if "%ASC_APP_ID%"=="YOUR_APP_STORE_CONNECT_APP_ID_HERE" (
-  echo Error: Please update your App Store Connect App ID in credentials\apple.json
+if "%ASC_APP_ID%"=="" (
+  echo Error: App Store Connect App ID not found in app-store.json
   exit /b 1
 )
 
-if "%APPLE_TEAM_ID%"=="YOUR_APPLE_TEAM_ID_HERE" (
-  echo Error: Please update your Apple Team ID in credentials\apple.json
+if "%APPLE_TEAM_ID%"=="" (
+  echo Error: Apple Team ID not found in app-store.json
   exit /b 1
 )
 
