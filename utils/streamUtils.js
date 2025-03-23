@@ -55,13 +55,19 @@ export const normalizeStreamUrl = (url) => {
 export const normalizeVideoUrl = (url) => {
   if (!url) return url;
   
+  // Ensure URL has a protocol
+  let normalizedUrl = url;
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    normalizedUrl = 'http://' + url;
+  }
+  
   // For direct TS streams, we might need to handle them differently
-  if (url.includes('output=ts')) {
+  if (normalizedUrl.includes('output=ts')) {
     // Some players might need special handling for TS streams
     console.log('TS stream detected, using special handling');
     // You might need to adjust this based on your player's capabilities
-    return url.replace('output=ts', 'output=m3u8');
+    return normalizedUrl.replace('output=ts', 'output=m3u8');
   }
   
-  return url;
+  return normalizedUrl;
 };
