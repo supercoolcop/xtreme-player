@@ -1,19 +1,54 @@
 // components/Playlist.js
-import React from 'react';
-import { View, FlatList, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, FlatList, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function Playlist({ channels, onSelect }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredChannels, setFilteredChannels] = useState(channels);
+
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredChannels(channels);
+    } else {
+      const filtered = channels.filter(channel => 
+        channel.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredChannels(filtered);
+    }
+  }, [searchQuery, channels]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Available Channels</Text>
-      {channels.length === 0 ? (
+      
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search channels..."
+          placeholderTextColor="#999"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Ionicons name="close-circle" size={20} color="#999" />
+          </TouchableOpacity>
+        )}
+      </View>
+      
+      {filteredChannels.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No channels available</Text>
+          <Text style={styles.emptyText}>
+            {channels.length === 0 
+              ? "No channels available" 
+              : "No channels match your search"}
+          </Text>
         </View>
       ) : (
         <FlatList
-          data={channels}
+          data={filteredChannels}
           keyExtractor={(item, index) => index.toString()}
           renderItem={({ item }) => (
             <TouchableOpacity
@@ -28,6 +63,12 @@ export default function Playlist({ channels, onSelect }) {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
         />
       )}
+      
+      <View style={styles.channelCount}>
+        <Text style={styles.channelCountText}>
+          {filteredChannels.length} of {channels.length} channels
+        </Text>
+      </View>
     </View>
   );
 }
@@ -44,6 +85,26 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     color: '#2196F3',
     textAlign: 'center'
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    height: 48
+  },
+  searchIcon: {
+    marginRight: 8
+  },
+  searchInput: {
+    flex: 1,
+    height: 48,
+    fontSize: 16,
+    color: '#333'
   },
   channelItem: {
     padding: 16,
@@ -80,6 +141,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
     textAlign: 'center'
+  },
+  channelCount: {
+    marginTop: 16,
+    alignItems: 'center'
+  },
+  channelCountText: {
+    fontSize: 14,
+    color: '#999'
   }
 });
 
