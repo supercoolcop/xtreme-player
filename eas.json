@@ -28,9 +28,9 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "YOUR_APPLE_ID",
-        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID",
-        "appleTeamId": "YOUR_APPLE_TEAM_ID"
+        "appleIdEnvVar": "EXPO_APPLE_ID",
+        "ascAppIdEnvVar": "EXPO_ASC_APP_ID",
+        "appleTeamIdEnvVar": "EXPO_APPLE_TEAM_ID"
       }
     }
   }
