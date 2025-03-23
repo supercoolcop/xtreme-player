@@ -32,8 +32,8 @@ export const normalizeStreamUrl = (url) => {
     if (!normalizedUrl.includes('type=')) {
       normalizedUrl += '&type=m3u';
     } else if (normalizedUrl.includes('type=m3u_plus')) {
-      // Handle m3u_plus format
-      normalizedUrl = normalizedUrl.replace('type=m3u_plus', 'type=m3u');
+      // Don't convert m3u_plus to m3u anymore as it may be required by some servers
+      // Previously: normalizedUrl = normalizedUrl.replace('type=m3u_plus', 'type=m3u');
     }
     
     return normalizedUrl;
