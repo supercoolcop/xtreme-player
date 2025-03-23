@@ -1,0 +1,3 @@
+# EAS ignore file
+# Include app-store.json in the build
+!app-store.json
