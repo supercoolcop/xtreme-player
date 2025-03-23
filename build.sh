@@ -33,6 +33,13 @@ fi
 
 echo "Credentials validation successful!"
 
+# Check if devices are registered
+echo "Checking if you need to register devices for internal distribution..."
+echo "Note: For internal distribution builds, you need to register your test devices."
+echo "If prompted about registering devices, select 'yes' and choose 'Website' option."
+echo "If asked about Apple Silicon, answer based on your Mac's processor type."
+echo "See DEVICE_REGISTRATION.md for detailed instructions."
+
 # Run prebuild to generate native projects
 echo "Running prebuild to generate native projects..."
 npx expo prebuild --clean
@@ -40,6 +47,11 @@ npx expo prebuild --clean
 # Build for iOS
 echo "Building for iOS..."
 echo "Using credentials from credentials/app-store.json..."
-eas build --platform ios --profile preview
+eas build --platform ios --profile production --auto-submit
 
 echo "Build process initiated. Check the EAS dashboard for build status."
+echo ""
+echo "Note: Using production profile with auto-submit as recommended by user."
+echo "This will automatically submit the build to TestFlight after completion."
+echo ""
+echo "See DEVICE_REGISTRATION.md for more detailed instructions if you need to register devices."
