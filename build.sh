@@ -47,14 +47,11 @@ npx expo prebuild --clean
 # Build for iOS
 echo "Building for iOS..."
 echo "Using credentials from credentials/app-store.json..."
-eas build --platform ios --profile preview
+eas build --platform ios --profile production --auto-submit
 
 echo "Build process initiated. Check the EAS dashboard for build status."
 echo ""
-echo "If the build fails with 'Failed to set up credentials' or 'You don't have any registered devices yet':"
-echo "1. Run 'eas device:create' to register your devices"
-echo "2. When prompted, choose 'Website' to generate a registration URL"
-echo "3. Open the URL on each iOS device you want to register"
-echo "4. Run this build script again"
+echo "Note: Using production profile with auto-submit as recommended by user."
+echo "This will automatically submit the build to TestFlight after completion."
 echo ""
-echo "See DEVICE_REGISTRATION.md for more detailed instructions."
+echo "See DEVICE_REGISTRATION.md for more detailed instructions if you need to register devices."
