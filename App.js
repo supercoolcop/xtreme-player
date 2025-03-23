@@ -354,6 +354,14 @@ export default function App() {
         <VideoPlayer
           url={currentUrl}
           onBack={() => setStage('playlist')}
+          onError={(errorDetails) => {
+            // Show an alert with the error details
+            Alert.alert(
+              'Stream Error',
+              `Unable to play this stream: ${errorDetails}`,
+              [{ text: 'Back to Channels', onPress: () => setStage('playlist') }]
+            );
+          }}
         />
       )}
     </View>

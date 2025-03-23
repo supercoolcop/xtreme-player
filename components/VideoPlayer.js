@@ -4,10 +4,19 @@ import { Video } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { normalizeVideoUrl } from '../utils/streamUtils';
 
-export default function VideoPlayer({ url, onBack }) {
+export default function VideoPlayer({ url, onBack, onError }) {
   // Validate input URL
   if (!url) {
     console.error('VideoPlayer: No URL provided');
+    onError && onError('No URL provided');
+    return (
+      <View style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>Error: No URL provided</Text>
+          <Button title="Back to Playlist" onPress={onBack} />
+        </View>
+      </View>
+    );
   }
   
   const fallbackUrl = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
@@ -154,6 +163,7 @@ export default function VideoPlayer({ url, onBack }) {
         setWaiting(true);
       } else {
         setError(true);
+        onError && onError(detailedError);
       }
     }
   };
@@ -265,6 +275,12 @@ export default function VideoPlayer({ url, onBack }) {
                   Attempt {loadAttempts}/{MAX_LOAD_ATTEMPTS}
                 </Text>
               )}
+              <View style={styles.loadingBackButton}>
+                <Button title="Back to Channels" onPress={onBack} />
+              </View>
+              <Text style={styles.loadingHint}>
+                Note: Some streams may take time to load. If loading takes too long, try another channel.
+              </Text>
             </View>
           )}
 
@@ -344,6 +360,19 @@ const styles = StyleSheet.create({
     fontSize: 12, 
     marginTop: 5, 
     color: '#555'
+  },
+  loadingHint: {
+    fontSize: 11,
+    marginTop: 10,
+    color: '#777',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    paddingHorizontal: 20
+  },
+  loadingBackButton: {
+    marginTop: 15,
+    marginBottom: 5,
+    width: '80%'
   },
   controlsContainer: {
     flexDirection: 'row', 
