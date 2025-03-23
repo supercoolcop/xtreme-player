@@ -40,6 +40,6 @@ npx expo prebuild --clean
 # Build for iOS
 echo "Building for iOS..."
 echo "Using credentials from app-store.json..."
-eas build --platform ios --profile preview --non-interactive
+eas build --platform ios --profile preview
 
 echo "Build process initiated. Check the EAS dashboard for build status."

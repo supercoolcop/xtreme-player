@@ -42,6 +42,6 @@ call npx expo prebuild --clean
 REM Build for iOS
 echo Building for iOS...
 echo Using credentials from app-store.json...
-call eas build --platform ios --profile preview --non-interactive
+call eas build --platform ios --profile preview
 
 echo Build process initiated. Check the EAS dashboard for build status.
