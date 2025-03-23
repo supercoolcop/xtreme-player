@@ -10,17 +10,24 @@
 export const normalizeStreamUrl = (url) => {
   if (!url || typeof url !== 'string') return url;
   
+  // Ensure URL has a protocol
+  let normalizedUrl = url;
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    normalizedUrl = 'http://' + url;
+  }
+  
   // Already in m3u/m3u8 format with no parameters
-  if (url.toLowerCase().endsWith('.m3u') || url.toLowerCase().endsWith('.m3u8')) {
-    return url;
+  if (normalizedUrl.toLowerCase().endsWith('.m3u') || 
+      normalizedUrl.toLowerCase().endsWith('.m3u8') ||
+      normalizedUrl.includes('/m3u8/') ||
+      normalizedUrl.includes('.m3u8?')) {
+    return normalizedUrl;
   }
   
   // Handle IPTV service URLs with parameters
-  if (url.includes('get.php') || url.includes('player_api.php')) {
-    let normalizedUrl = url;
-    
+  if (normalizedUrl.includes('get.php') || normalizedUrl.includes('player_api.php')) {
     // Check if URL has output parameter
-    if (url.includes('output=')) {
+    if (normalizedUrl.includes('output=')) {
       // Replace output=ts or other formats with output=m3u8
       normalizedUrl = normalizedUrl.replace(/output=[^&]+/g, 'output=m3u8');
     } else {
@@ -32,14 +39,12 @@ export const normalizeStreamUrl = (url) => {
     if (!normalizedUrl.includes('type=')) {
       normalizedUrl += '&type=m3u';
     } else if (normalizedUrl.includes('type=m3u_plus')) {
-      // Handle m3u_plus format
-      normalizedUrl = normalizedUrl.replace('type=m3u_plus', 'type=m3u');
+      // Don't convert m3u_plus to m3u anymore as it may be required by some servers
+      // Previously: normalizedUrl = normalizedUrl.replace('type=m3u_plus', 'type=m3u');
     }
-    
-    return normalizedUrl;
   }
   
-  return url;
+  return normalizedUrl;
 };
 
 /**

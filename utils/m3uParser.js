@@ -30,17 +30,14 @@ export const parseM3U = (data) => {
         // Get the URL from the next line
         const url = lines[i + 1]?.trim();
         
-        // Validate URL format - MODIFIED to be more permissive
-        if (!url) {
+        // Accept any non-empty string as a URL - we'll validate it when we try to fetch
+        if (!url || url.trim() === '') {
           errors.push(`Missing URL for channel "${name}" at line ${i+1}`);
           continue;
         }
         
-        // Accept any URL that starts with http or https
-        if (!url.startsWith('http') ) {
-          errors.push(`Invalid URL format for channel "${name}": ${url}`);
-          continue;
-        }
+        // Previously required URLs to start with 'http'
+        // Now we'll accept any non-empty string and let the fetch handle any errors
         
         // Add valid channel to the list
         channels.push({ name, url });

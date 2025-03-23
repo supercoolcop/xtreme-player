@@ -23,12 +23,25 @@ export default function LoginForm({ onM3ULogin, onXtreamLogin }) {
       return;
     }
     
+    // Basic URL format validation
+    try {
+      // Normalize URL before validation attempt
+      let testUrl = url;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        testUrl = 'http://' + url;
+      }
+      new URL(testUrl); // Will throw if URL is invalid
+    } catch (error) {
+      alert('Invalid URL format. Please enter a valid URL.');
+      return;
+    }
+    
     setLoading(true);
     try {
       await onM3ULogin(url);
     } catch (error) {
       console.error('M3U login error:', error);
-      alert('Error logging in: ' + error.message);
+      alert('Error loading M3U playlist: ' + error.message);
     } finally {
       setLoading(false);
     }

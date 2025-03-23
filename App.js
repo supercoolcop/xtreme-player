@@ -100,8 +100,17 @@ export default function App() {
   const handleXtreamLogin = async ({ host, username, password }) => {
     try {
       setLoading(true);
+      // Ensure host has proper format
+      if (!host.startsWith('http://') && !host.startsWith('https://')) {
+        host = 'http://' + host;
+      }
+      
       const url = `${host}/player_api.php?username=${username}&password=${password}`;
-      const res = await axios.get(url);
+      const res = await axios.get(url, {
+        timeout: 15000,  // 15 seconds timeout
+        validateStatus: status => status < 400 // Only treat HTTP errors (400+) as errors
+      });
+      
       const liveChannels = res.data?.available_channels || res.data?.live_streams;
       
       if (!liveChannels || liveChannels.length === 0) {
@@ -118,7 +127,17 @@ export default function App() {
       setStage('playlist');
     } catch (e) {
       console.error('Xtream login error:', e);
-      alert('Error logging in: ' + (e.message || 'Unknown error'));
+      
+      // More descriptive error messages based on error type
+      if (e.code === 'ECONNABORTED') {
+        alert('Connection timed out. The server might be slow or unreachable.');
+      } else if (e.response && e.response.status) {
+        alert(`Server error (${e.response.status}): ${e.message}`);
+      } else if (e.message.includes('Network Error')) {
+        alert('Network error. Please check your internet connection and try again.');
+      } else {
+        alert('Error logging in: ' + (e.message || 'Unknown error'));
+      }
     } finally {
       setLoading(false);
     }
@@ -134,7 +153,12 @@ export default function App() {
       console.log('Original URL:', url);
       console.log('Normalized URL:', normalizedUrl);
       
-      const res = await axios.get(normalizedUrl);
+      // Set a reasonable timeout for the request
+      const res = await axios.get(normalizedUrl, { 
+        timeout: 15000,  // 15 seconds timeout
+        validateStatus: status => status < 400 // Only treat HTTP errors (400+) as errors
+      });
+      
       const channels = parseM3U(res.data);
       if (channels.length > 0) {
         await saveChannels(channels);
@@ -142,8 +166,18 @@ export default function App() {
       setPlaylist(channels);
       setStage('playlist');
     } catch (e) {
-      console.error('M3U fetch failed:', e.message);
-      alert('Error loading M3U playlist: ' + e.message);
+      console.error('M3U fetch failed:', e);
+      
+      // More descriptive error messages based on error type
+      if (e.code === 'ECONNABORTED') {
+        alert('Connection timed out. The server might be slow or unreachable.');
+      } else if (e.response && e.response.status) {
+        alert(`Server error (${e.response.status}): ${e.message}`);
+      } else if (e.message.includes('Network Error')) {
+        alert('Network error. Please check your internet connection and try again.');
+      } else {
+        alert('Error loading M3U playlist: ' + e.message);
+      }
     } finally {
       setLoading(false);
     }
