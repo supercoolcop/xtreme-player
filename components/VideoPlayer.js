@@ -21,7 +21,8 @@ export default function VideoPlayer({ url, onBack }) {
   const [loadAttempts, setLoadAttempts] = useState(0);
 
   const videoRef = useRef(null);
-  const MAX_LOAD_ATTEMPTS = 3;
+  const MAX_LOAD_ATTEMPTS = 5;
+  const LOADING_TIMEOUT = 300000; // 5 minutes for very slow connections
 
   // Initialize with the URL and reset state when URL changes
   useEffect(() => {
@@ -43,7 +44,7 @@ export default function VideoPlayer({ url, onBack }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       setWaiting(false);
-    }, 15000); // give the stream time to load
+    }, LOADING_TIMEOUT); // give the stream more time to load (45 seconds)
 
     return () => clearTimeout(timer);
   }, [currentUrl]);
@@ -232,7 +233,7 @@ export default function VideoPlayer({ url, onBack }) {
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color="#007bff" />
               <Text style={styles.loadingText}>
-                Waiting for stream to start (15 sec)...
+                Waiting for stream to start (up to 5 min)...
               </Text>
               {loadAttempts > 0 && (
                 <Text style={styles.loadingText}>

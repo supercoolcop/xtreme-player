@@ -6,8 +6,12 @@ export const parseM3U = (data) => {
     throw new Error('Invalid M3U data: Input must be a non-empty string');
   }
 
-  // Check if this is actually an M3U file
+  // Check if this is actually an M3U file or a direct video URL
   if (!data.includes('#EXTM3U') && !data.includes('#EXTINF')) {
+    // If it's a direct video URL (ending with common video extensions), create a single channel
+    if (data.trim().match(/\.(m3u8|mp4|ts|webm|mkv)($|\?)/i)) {
+      return [{ name: 'Direct Stream', url: data.trim() }];
+    }
     throw new Error('Invalid M3U format: Missing required M3U headers');
   }
 

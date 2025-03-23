@@ -153,18 +153,28 @@ export default function App() {
       console.log('Original URL:', url);
       console.log('Normalized URL:', normalizedUrl);
       
-      // Set a reasonable timeout for the request
-      const res = await axios.get(normalizedUrl, { 
-        timeout: 15000,  // 15 seconds timeout
-        validateStatus: status => status < 400 // Only treat HTTP errors (400+) as errors
-      });
-      
-      const channels = parseM3U(res.data);
-      if (channels.length > 0) {
+      // Check if URL is likely a direct video URL
+      if (normalizedUrl.match(/\.(m3u8|mp4|ts|webm|mkv)($|\?)/i)) {
+        console.log('Direct video URL detected, creating single channel playlist');
+        // Create a single channel playlist directly without fetching
+        const channels = [{ name: 'Direct Stream', url: normalizedUrl }];
         await saveChannels(channels);
+        setPlaylist(channels);
+        setStage('playlist');
+      } else {
+        // Set a reasonable timeout for the request
+        const res = await axios.get(normalizedUrl, { 
+          timeout: 30000,  // 30 seconds timeout for playlist fetch
+          validateStatus: status => status < 400 // Only treat HTTP errors (400+) as errors
+        });
+        
+        const channels = parseM3U(res.data);
+        if (channels.length > 0) {
+          await saveChannels(channels);
+        }
+        setPlaylist(channels);
+        setStage('playlist');
       }
-      setPlaylist(channels);
-      setStage('playlist');
     } catch (e) {
       console.error('M3U fetch failed:', e);
       
