@@ -12,7 +12,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "org.blcharity.xtreamiptvplayer",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": []
+      },
+      "entitlements": {
+        "aps-environment": "development"
       }
     },
     "extra": {
