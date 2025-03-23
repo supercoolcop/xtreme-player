@@ -3,16 +3,16 @@ REM Build script for Xtream IPTV Player on Windows
 REM This script helps build the app for iOS TestFlight using secure credentials
 
 REM Check if app-store.json file exists
-if not exist ".\app-store.json" (
+if not exist ".\credentials\app-store.json" (
   echo Error: app-store.json not found!
   echo Please make sure your app-store.json file exists with your Apple credentials
   exit /b 1
 )
 
 REM Load credentials from file using PowerShell
-for /f "tokens=*" %%a in ('powershell -Command "Get-Content .\app-store.json | ConvertFrom-Json | Select-Object -ExpandProperty appleId"') do set APPLE_ID=%%a
-for /f "tokens=*" %%a in ('powershell -Command "Get-Content .\app-store.json | ConvertFrom-Json | Select-Object -ExpandProperty ascAppId"') do set ASC_APP_ID=%%a
-for /f "tokens=*" %%a in ('powershell -Command "Get-Content .\app-store.json | ConvertFrom-Json | Select-Object -ExpandProperty appleTeamId"') do set APPLE_TEAM_ID=%%a
+for /f "tokens=*" %%a in ('powershell -Command "Get-Content .\credentials\app-store.json | ConvertFrom-Json | Select-Object -ExpandProperty appleId"') do set APPLE_ID=%%a
+for /f "tokens=*" %%a in ('powershell -Command "Get-Content .\credentials\app-store.json | ConvertFrom-Json | Select-Object -ExpandProperty ascAppId"') do set ASC_APP_ID=%%a
+for /f "tokens=*" %%a in ('powershell -Command "Get-Content .\credentials\app-store.json | ConvertFrom-Json | Select-Object -ExpandProperty teamId"') do set APPLE_TEAM_ID=%%a
 
 REM Check if credentials are valid
 if "%APPLE_ID%"=="" (
