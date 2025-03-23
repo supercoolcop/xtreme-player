@@ -208,7 +208,14 @@ export default function VideoPlayer({ url, onBack }) {
               resizeMode="contain"
               shouldPlay
               style={styles.video}
-              onError={handleVideoError}
+              onError={(e) => {
+                console.warn('❌ Video error:', JSON.stringify(e));
+                console.warn('URL causing error:', currentUrl);
+                if (currentUrl.startsWith('http://')) {
+                  console.warn('HTTP URL detected - check NSAllowsArbitraryLoadsInMedia setting in Info.plist');
+                }
+                handleVideoError(e);
+              }}
               onLoad={() => {
                 console.log('Video loaded successfully');
                 setWaiting(false);
