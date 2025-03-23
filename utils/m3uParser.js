@@ -1,11 +1,5 @@
-// utils/m3uParser.js
-// utils/m3uParser.js
-/**
- * Parse M3U playlist content and extract channel information
- * @param {string} data - Raw M3U playlist content
- * @returns {Array} Array of channel objects with name and url properties
- * @throws {Error} If data is invalid or parsing fails
- */
+// In utils/m3uParser.js, update the parseM3U function:
+
 export const parseM3U = (data) => {
   // Input validation
   if (!data || typeof data !== 'string') {
@@ -36,12 +30,13 @@ export const parseM3U = (data) => {
         // Get the URL from the next line
         const url = lines[i + 1]?.trim();
         
-        // Validate URL format
+        // Validate URL format - MODIFIED to be more permissive
         if (!url) {
           errors.push(`Missing URL for channel "${name}" at line ${i+1}`);
           continue;
         }
         
+        // Accept any URL that starts with http or https
         if (!url.startsWith('http') ) {
           errors.push(`Invalid URL format for channel "${name}": ${url}`);
           continue;
@@ -66,4 +61,43 @@ export const parseM3U = (data) => {
   }
 
   return channels;
+};
+
+// In utils/m3uParser.js, add this helper function:
+
+/**
+ * Normalize IPTV service URLs to ensure they work with our player
+ * @param {string} url - Original URL from user or playlist
+ * @returns {string} - Normalized URL that will work with our player
+ */
+export const normalizeStreamUrl = (url) => {
+  if (!url || typeof url !== 'string') return url;
+  
+  // Already in m3u/m3u8 format with no parameters
+  if (url.toLowerCase().endsWith('.m3u') || url.toLowerCase().endsWith('.m3u8')) {
+    return url;
+  }
+  
+  // Handle IPTV service URLs with parameters
+  if (url.includes('get.php') || url.includes('player_api.php')) {
+    let normalizedUrl = url;
+    
+    // Check if URL has output parameter
+    if (url.includes('output=')) {
+      // Replace output=ts or other formats with output=m3u8
+      normalizedUrl = normalizedUrl.replace(/output=[^&]+/g, 'output=m3u8');
+    } else {
+      // Add output parameter if not present
+      normalizedUrl += (normalizedUrl.includes('?') ? '&' : '?') + 'output=m3u8';
+    }
+    
+    // Ensure type=m3u parameter exists
+    if (!normalizedUrl.includes('type=')) {
+      normalizedUrl += '&type=m3u';
+    }
+    
+    return normalizedUrl;
+  }
+  
+  return url;
 };

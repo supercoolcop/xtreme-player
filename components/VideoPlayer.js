@@ -143,6 +143,32 @@ export default function VideoPlayer({ url, onBack }) {
     }
   };
 
+  // In VideoPlayer.js, add this helper function:
+
+  const normalizeVideoUrl = (url) => {
+    if (!url) return url;
+    
+    // For direct TS streams, we might need to handle them differently
+    if (url.includes('output=ts')) {
+      // Some players might need special handling for TS streams
+      console.log('TS stream detected, using special handling');
+      // You might need to adjust this based on your player's capabilities
+      return url;
+    }
+    
+    return url;
+  };
+
+  // Then in your VideoPlayer component, use it:
+  useEffect(() => {
+    if (url) {
+      const processedUrl = normalizeVideoUrl(url);
+      setCurrentUrl(processedUrl);
+      // ... rest of your code
+    }
+  }, [url]);
+
+
   return (
     <View style={{ flex: 1, paddingTop: 40, paddingHorizontal: 20 }}>
       {error ? (
