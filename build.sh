@@ -33,6 +33,13 @@ fi
 
 echo "Credentials validation successful!"
 
+# Check if devices are registered
+echo "Checking if you need to register devices for internal distribution..."
+echo "Note: For internal distribution builds, you need to register your test devices."
+echo "If prompted about registering devices, select 'yes' and choose 'Website' option."
+echo "If asked about Apple Silicon, answer based on your Mac's processor type."
+echo "See DEVICE_REGISTRATION.md for detailed instructions."
+
 # Run prebuild to generate native projects
 echo "Running prebuild to generate native projects..."
 npx expo prebuild --clean
@@ -43,3 +50,11 @@ echo "Using credentials from credentials/app-store.json..."
 eas build --platform ios --profile preview
 
 echo "Build process initiated. Check the EAS dashboard for build status."
+echo ""
+echo "If the build fails with 'Failed to set up credentials' or 'You don't have any registered devices yet':"
+echo "1. Run 'eas device:create' to register your devices"
+echo "2. When prompted, choose 'Website' to generate a registration URL"
+echo "3. Open the URL on each iOS device you want to register"
+echo "4. Run this build script again"
+echo ""
+echo "See DEVICE_REGISTRATION.md for more detailed instructions."
