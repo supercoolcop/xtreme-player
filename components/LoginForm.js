@@ -1,6 +1,13 @@
 // components/LoginForm.js
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  ActivityIndicator, 
+  StyleSheet 
+} from 'react-native';
 import { normalizeStreamUrl } from '../utils/streamUtils';
 
 export default function LoginForm({ onM3ULogin, onXtreamLogin }) {
@@ -8,8 +15,41 @@ export default function LoginForm({ onM3ULogin, onXtreamLogin }) {
   const [host, setHost] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // In LoginForm.js, update the UI components:
+  const handleM3ULogin = async (url) => {
+    if (!url) {
+      alert('Please enter a valid M3U URL');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await onM3ULogin(url);
+    } catch (error) {
+      console.error('M3U login error:', error);
+      alert('Error logging in: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleXtreamLogin = async () => {
+    if (!host || !username || !password) {
+      alert('Please fill in all Xtream Codes fields');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await onXtreamLogin({ host, username, password });
+    } catch (error) {
+      console.error('Xtream login error:', error);
+      alert('Error logging in: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -48,7 +88,7 @@ export default function LoginForm({ onM3ULogin, onXtreamLogin }) {
         
         <TextInput
           style={styles.input}
-          placeholder="Host (e.g., http://example.com) "
+          placeholder="Host (e.g., http://example.com)"
           placeholderTextColor="#999"
           value={host}
           onChangeText={setHost}
@@ -89,75 +129,74 @@ export default function LoginForm({ onM3ULogin, onXtreamLogin }) {
       </View>
     </View>
   );
-
-  // And update the styles:
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      padding: 20,
-      backgroundColor: '#f5f5f5',
-    },
-    card: {
-      backgroundColor: '#fff',
-      borderRadius: 10,
-      padding: 20,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-    },
-    title: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: '#2196F3',
-      marginBottom: 20,
-      textAlign: 'center',
-    },
-    subtitle: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      color: '#2196F3',
-      marginBottom: 15,
-      marginTop: 10,
-    },
-    input: {
-      backgroundColor: '#f9f9f9',
-      borderRadius: 5,
-      padding: 15,
-      marginBottom: 15,
-      borderWidth: 1,
-      borderColor: '#e0e0e0',
-      fontSize: 16,
-    },
-    button: {
-      backgroundColor: '#2196F3',
-      borderRadius: 5,
-      padding: 15,
-      alignItems: 'center',
-      marginTop: 5,
-      marginBottom: 15,
-    },
-    buttonText: {
-      color: '#fff',
-      fontSize: 16,
-      fontWeight: 'bold',
-    },
-    divider: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginVertical: 20,
-    },
-    dividerLine: {
-      flex: 1,
-      height: 1,
-      backgroundColor: '#e0e0e0',
-    },
-    dividerText: {
-      marginHorizontal: 10,
-      color: '#999',
-      fontSize: 14,
-    },
-  });
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#f5f5f5',
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2196F3',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2196F3',
+    marginBottom: 15,
+    marginTop: 10,
+  },
+  input: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 5,
+    padding: 15,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    fontSize: 16,
+  },
+  button: {
+    backgroundColor: '#2196F3',
+    borderRadius: 5,
+    padding: 15,
+    alignItems: 'center',
+    marginTop: 5,
+    marginBottom: 15,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e0e0e0',
+  },
+  dividerText: {
+    marginHorizontal: 10,
+    color: '#999',
+    fontSize: 14,
+  },
+});
 

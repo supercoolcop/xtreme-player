@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, TextInput, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
 
 import LoginForm from './components/LoginForm';
 import Playlist from './components/Playlist';
 import VideoPlayer from './components/VideoPlayer';
 import axios from 'axios';
 import { parseM3U } from './utils/m3uParser';
-import { saveChannels, loadChannels } from './utils/storage'; // ✅ ✅ ✅
+import { saveChannels, loadChannels } from './utils/storage';
+import { normalizeStreamUrl } from './utils/streamUtils';
 
 export default function App() {
   const [stage, setStage] = useState('login'); // login | playlist | player
@@ -14,8 +15,6 @@ export default function App() {
   const [currentUrl, setCurrentUrl] = useState(null);
   const [askSource, setAskSource] = useState(true);
   const [loading, setLoading] = useState(false);
-
-
 
   useEffect(() => {
     const checkCache = async () => {
@@ -28,20 +27,20 @@ export default function App() {
     checkCache();
   }, []);
   
-  // 🧠 All hooks above this point — now safe to return conditionally below!
+  // All hooks above this point — now safe to return conditionally below!
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007bff" />
-        <Text style={{ marginTop: 10 }}>Loading...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
   
   if (askSource) {
     return (
-      <View style={{ padding: 20, marginTop: 40 }}>
-        <Text style={{ fontSize: 16, marginBottom: 10 }}>Load channels from:</Text>
+      <View style={styles.sourceContainer}>
+        <Text style={styles.sourceTitle}>Load channels from:</Text>
         <Button
           title="📁 Use Saved Playlist"
           onPress={async () => {
@@ -63,51 +62,60 @@ export default function App() {
     );
   }
   
-
   const handleXtreamLogin = async ({ host, username, password }) => {
     try {
+      setLoading(true);
       const url = `${host}/player_api.php?username=${username}&password=${password}`;
       const res = await axios.get(url);
       const liveChannels = res.data?.available_channels || res.data?.live_streams;
+      
+      if (!liveChannels || liveChannels.length === 0) {
+        throw new Error('No channels found in the Xtream API response');
+      }
+      
       const channels = liveChannels.map((item) => ({
         name: item.name,
         url: `${host}/live/${username}/${password}/${item.stream_id}.m3u8`,
       }));
+      
+      await saveChannels(channels);
       setPlaylist(channels);
       setStage('playlist');
     } catch (e) {
-      console.error(e);
+      console.error('Xtream login error:', e);
+      alert('Error logging in: ' + (e.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Then in your handleM3ULogin function:
-const handleM3ULogin = async (url) => {
-  setLoading(true);
-  try {
-    // Normalize the URL to ensure it works with our player
-    const normalizedUrl = normalizeStreamUrl(url);
-    
-    // Log both URLs to help with debugging
-    console.log('Original URL:', url);
-    console.log('Normalized URL:', normalizedUrl);
-    
-    const res = await axios.get(normalizedUrl);
-    const channels = parseM3U(res.data);
-    if (channels.length > 0) {
-      await saveChannels(channels);
+  const handleM3ULogin = async (url) => {
+    setLoading(true);
+    try {
+      // Normalize the URL to ensure it works with our player
+      const normalizedUrl = normalizeStreamUrl(url);
+      
+      // Log both URLs to help with debugging
+      console.log('Original URL:', url);
+      console.log('Normalized URL:', normalizedUrl);
+      
+      const res = await axios.get(normalizedUrl);
+      const channels = parseM3U(res.data);
+      if (channels.length > 0) {
+        await saveChannels(channels);
+      }
+      setPlaylist(channels);
+      setStage('playlist');
+    } catch (e) {
+      console.error('M3U fetch failed:', e.message);
+      alert('Error loading M3U playlist: ' + e.message);
+    } finally {
+      setLoading(false);
     }
-    setPlaylist(channels);
-    setStage('playlist');
-  } catch (e) {
-    console.error('M3U fetch failed:', e.message);
-    alert('Error loading M3U playlist: ' + e.message);
-  }
-  setLoading(false);
-};  
+  };  
   
-
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.container}>
       {stage === 'login' && (
         <LoginForm onM3ULogin={handleM3ULogin} onXtreamLogin={handleXtreamLogin} />
       )}
@@ -129,4 +137,29 @@ const handleM3ULogin = async (url) => {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center'
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#555'
+  },
+  sourceContainer: {
+    padding: 20, 
+    marginTop: 40
+  },
+  sourceTitle: {
+    fontSize: 16, 
+    marginBottom: 10,
+    fontWeight: '500'
+  }
+});
 

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Button, Text, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import { View, Button, Text, ActivityIndicator, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { Video } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { normalizeVideoUrl } from '../utils/streamUtils';
@@ -11,7 +11,7 @@ export default function VideoPlayer({ url, onBack }) {
   }
   
   const fallbackUrl = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
-  const [currentUrl, setCurrentUrl] = useState(url || fallbackUrl) ;
+  const [currentUrl, setCurrentUrl] = useState(url || fallbackUrl);
   const [attemptedFallback, setAttemptedFallback] = useState(false);
   const [error, setError] = useState(false);
   const [errorDetails, setErrorDetails] = useState('');
@@ -23,7 +23,7 @@ export default function VideoPlayer({ url, onBack }) {
   const videoRef = useRef(null);
   const MAX_LOAD_ATTEMPTS = 3;
 
-  // Then in your component:
+  // Initialize with the URL and reset state when URL changes
   useEffect(() => {
     if (url) {
       const processedUrl = normalizeVideoUrl(url);
@@ -64,8 +64,8 @@ export default function VideoPlayer({ url, onBack }) {
     }
     
     // If URL has http://, try https://
-    if (originalUrl.startsWith('http://') ) {
-      return originalUrl.replace('http://', 'https://') ;
+    if (originalUrl.startsWith('http://')) {
+      return originalUrl.replace('http://', 'https://');
     }
     
     // No alternative format available
@@ -145,44 +145,37 @@ export default function VideoPlayer({ url, onBack }) {
     }
   };
 
-
-  // Then in your VideoPlayer component, use it:
-  useEffect(() => {
-    if (url) {
-      const processedUrl = normalizeVideoUrl(url);
-      setCurrentUrl(processedUrl);
-      // ... rest of your code
-    }
-  }, [url]);
-
-
   return (
-    <View style={{ flex: 1, paddingTop: 40, paddingHorizontal: 20 }}>
+    <View style={styles.container}>
       {error ? (
-        <View style={{ alignItems: 'center', marginTop: 30 }}>
-          <Text style={{ color: 'red', marginBottom: 10, textAlign: 'center' }}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>
             🚫 Unable to load video after multiple attempts.
           </Text>
           {errorDetails ? (
-            <Text style={{ color: '#555', marginBottom: 10, textAlign: 'center' }}>
+            <Text style={styles.errorDetails}>
               Error: {errorDetails}
             </Text>
           ) : null}
-          <Text style={{ color: '#555', marginBottom: 20, textAlign: 'center' }}>
+          <Text style={styles.errorHint}>
             The m3u URL may be invalid or the stream might be unavailable.
           </Text>
           <Button title="🔄 Try Again" onPress={handleRetry} />
         </View>
       ) : (
         <>
-          <TouchableOpacity onPress={togglePlayback} onLongPress={toggleFullscreen}>
+          <TouchableOpacity 
+            onPress={togglePlayback} 
+            onLongPress={toggleFullscreen}
+            style={styles.videoContainer}
+          >
             <Video
               ref={videoRef}
               source={{ uri: currentUrl }}
               useNativeControls
               resizeMode="contain"
               shouldPlay
-              style={{ width: '100%', height: 300, borderRadius: 10 }}
+              style={styles.video}
               onError={handleVideoError}
               onLoad={() => {
                 console.log('Video loaded successfully');
@@ -197,41 +190,108 @@ export default function VideoPlayer({ url, onBack }) {
           </TouchableOpacity>
 
           {waiting && (
-            <View style={{ marginTop: 10, alignItems: 'center' }}>
+            <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color="#007bff" />
-              <Text style={{ fontSize: 12, marginTop: 5, color: '#555' }}>
+              <Text style={styles.loadingText}>
                 Waiting for stream to start (15 sec)...
               </Text>
               {loadAttempts > 0 && (
-                <Text style={{ fontSize: 12, marginTop: 5, color: '#555' }}>
+                <Text style={styles.loadingText}>
                   Attempt {loadAttempts}/{MAX_LOAD_ATTEMPTS}
                 </Text>
               )}
             </View>
           )}
 
-          <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 10 }}>
+          <View style={styles.controlsContainer}>
             <Ionicons
               name={isPlaying ? 'pause' : 'play'}
               size={28}
               color="#007bff"
               onPress={togglePlayback}
-              style={{ marginHorizontal: 15 }}
+              style={styles.controlIcon}
             />
             <Ionicons
               name='resize'
               size={28}
               color="#007bff"
               onPress={toggleFullscreen}
-              style={{ marginHorizontal: 15 }}
+              style={styles.controlIcon}
             />
           </View>
         </>
       )}
 
-      <View style={{ marginTop: 20 }}>
+      <View style={styles.backButtonContainer}>
         <Button title="Back to Playlist" onPress={onBack} />
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1, 
+    paddingTop: 40, 
+    paddingHorizontal: 20
+  },
+  errorContainer: {
+    alignItems: 'center', 
+    marginTop: 30
+  },
+  errorTitle: {
+    color: 'red', 
+    marginBottom: 10, 
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 16
+  },
+  errorDetails: {
+    color: '#555', 
+    marginBottom: 10, 
+    textAlign: 'center'
+  },
+  errorHint: {
+    color: '#555', 
+    marginBottom: 20, 
+    textAlign: 'center'
+  },
+  videoContainer: {
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4
+  },
+  video: {
+    width: '100%', 
+    height: 300, 
+    borderRadius: 10
+  },
+  loadingContainer: {
+    marginTop: 10, 
+    alignItems: 'center'
+  },
+  loadingText: {
+    fontSize: 12, 
+    marginTop: 5, 
+    color: '#555'
+  },
+  controlsContainer: {
+    flexDirection: 'row', 
+    justifyContent: 'center', 
+    marginTop: 15,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 30,
+    padding: 10
+  },
+  controlIcon: {
+    marginHorizontal: 15
+  },
+  backButtonContainer: {
+    marginTop: 20
+  }
+});
