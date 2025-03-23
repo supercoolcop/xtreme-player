@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Button, StyleSheet, ActivityIndicator, Alert, FlatList, TouchableOpacity } from 'react-native';
 
 import LoginForm from './components/LoginForm';
 import Playlist from './components/Playlist';
 import VideoPlayer from './components/VideoPlayer';
 import axios from 'axios';
 import { parseM3U } from './utils/m3uParser';
-import { saveChannels, loadChannels } from './utils/storage';
+import { 
+  saveChannels, 
+  loadChannels, 
+  getSavedPlaylistTags, 
+  getAllPlaylists, 
+  clearCachedChannels,
+  DEFAULT_TTL
+} from './utils/storage';
 import { normalizeStreamUrl } from './utils/streamUtils';
 import { isConnected, subscribeToNetworkChanges } from './utils/networkUtils';
 
@@ -16,6 +23,8 @@ export default function App() {
   const [currentUrl, setCurrentUrl] = useState(null);
   const [askSource, setAskSource] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [savedPlaylists, setSavedPlaylists] = useState([]);
+  const [showPlaylistSelector, setShowPlaylistSelector] = useState(false);
 
   // Check network connectivity on app start
   useEffect(() => {
@@ -53,10 +62,15 @@ export default function App() {
 
   useEffect(() => {
     const checkCache = async () => {
-      const data = await loadChannels();
-      if (data) {
-        const ageHours = (Date.now() - data.timestamp) / (1000 * 60 * 60);
-        console.log(`Cached playlist is ${ageHours.toFixed(1)} hours old`);
+      const playlists = await getAllPlaylists();
+      setSavedPlaylists(playlists);
+      
+      if (playlists.length > 0) {
+        console.log(`Found ${playlists.length} saved playlists`);
+        playlists.forEach(playlist => {
+          const ageHours = (Date.now() - playlist.timestamp) / (1000 * 60 * 60);
+          console.log(`Playlist "${playlist.tag}" is ${ageHours.toFixed(1)} hours old (${playlist.count} channels)`);
+        });
       }
     };
     checkCache();
@@ -67,22 +81,127 @@ export default function App() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007bff" />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.loadingText}>Loading channel list...</Text>
+        <View style={styles.loadingBackButtonContainer}>
+          <Button title="Back" onPress={() => {
+            setLoading(false);
+            setAskSource(true);
+          }} />
+        </View>
       </View>
     );
   }
   
   if (askSource) {
+    if (showPlaylistSelector && savedPlaylists.length > 0) {
+      return (
+        <View style={styles.sourceContainer}>
+          <Text style={styles.sourceTitle}>Select a saved playlist:</Text>
+          <FlatList
+            data={savedPlaylists}
+            keyExtractor={(item) => item.tag}
+            renderItem={({ item }) => {
+              const ageHours = (Date.now() - item.timestamp) / (1000 * 60 * 60);
+              const isExpired = item.isExpired;
+              
+              return (
+                <TouchableOpacity
+                  style={[styles.playlistItem, isExpired && styles.playlistItemExpired]}
+                  onPress={async () => {
+                    if (isExpired) {
+                      Alert.alert(
+                        'Playlist Expired',
+                        `This playlist is ${Math.floor(ageHours)} hours old and may be outdated. Would you like to refresh it?`,
+                        [
+                          { 
+                            text: 'Use Anyway', 
+                            onPress: async () => {
+                              const data = await loadChannels(item.tag, false);
+                              if (data && data.channels) {
+                                setPlaylist(data.channels);
+                                setStage('playlist');
+                              }
+                            } 
+                          },
+                          { 
+                            text: 'Refresh', 
+                            onPress: () => {
+                              setShowPlaylistSelector(false);
+                              setAskSource(false);
+                              // Will need to re-enter URL
+                            } 
+                          }
+                        ]
+                      );
+                    } else {
+                      const data = await loadChannels(item.tag);
+                      if (data && data.channels) {
+                        setPlaylist(data.channels);
+                        setStage('playlist');
+                      }
+                    }
+                  }}
+                >
+                  <Text style={styles.playlistName}>
+                    {item.tag} ({item.count} channels)
+                  </Text>
+                  <Text style={styles.playlistAge}>
+                    {Math.floor(ageHours)} hours old
+                    {isExpired && ' - Refresh recommended'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            }}
+          />
+          <View style={styles.buttonContainer}>
+            <Button
+              title="Back"
+              onPress={() => setShowPlaylistSelector(false)}
+            />
+          </View>
+        </View>
+      );
+    }
+    
     return (
       <View style={styles.sourceContainer}>
         <Text style={styles.sourceTitle}>Load channels from:</Text>
+        {savedPlaylists.length > 0 && (
+          <>
+            <Button
+              title="📁 Select Saved Playlist"
+              onPress={() => setShowPlaylistSelector(true)}
+            />
+            <View style={{ height: 10 }} />
+          </>
+        )}
         <Button
-          title="📁 Use Saved Playlist"
+          title="📁 Use Last Playlist"
           onPress={async () => {
             const data = await loadChannels();
             if (data && data.channels) {
-              setPlaylist(data.channels);
-              setStage('playlist');
+              if (data.isExpired) {
+                Alert.alert(
+                  'Playlist Expired',
+                  'This playlist is over 48 hours old and may be outdated. Would you like to refresh it?',
+                  [
+                    { 
+                      text: 'Use Anyway', 
+                      onPress: () => {
+                        setPlaylist(data.channels);
+                        setStage('playlist');
+                      } 
+                    },
+                    { 
+                      text: 'Refresh', 
+                      onPress: () => setAskSource(false) 
+                    }
+                  ]
+                );
+              } else {
+                setPlaylist(data.channels);
+                setStage('playlist');
+              }
             } else {
               alert('No saved playlist found.');
             }
@@ -122,9 +241,19 @@ export default function App() {
         url: `${host}/live/${username}/${password}/${item.stream_id}.m3u8`,
       }));
       
-      await saveChannels(channels);
+      // Create a tag from the host and username
+      const tag = `xtream_${host.replace(/https?:\/\//, '').replace(/\./g, '_')}_${username}`;
+      
+      // Save channels with tag
+      const result = await saveChannels(channels, tag);
+      console.log(`Saved ${result.count} channels with tag: ${result.tag}`);
+      
       setPlaylist(channels);
       setStage('playlist');
+      
+      // Refresh the saved playlists list
+      const playlists = await getAllPlaylists();
+      setSavedPlaylists(playlists);
     } catch (e) {
       console.error('Xtream login error:', e);
       
@@ -153,12 +282,20 @@ export default function App() {
       console.log('Original URL:', url);
       console.log('Normalized URL:', normalizedUrl);
       
+      // Create a tag from the URL (simplified for storage)
+      const urlObj = new URL(normalizedUrl);
+      const tag = `m3u_${urlObj.hostname.replace(/\./g, '_')}`;
+      
       // Check if URL is likely a direct video URL
       if (normalizedUrl.match(/\.(m3u8|mp4|ts|webm|mkv)($|\?)/i)) {
         console.log('Direct video URL detected, creating single channel playlist');
         // Create a single channel playlist directly without fetching
         const channels = [{ name: 'Direct Stream', url: normalizedUrl }];
-        await saveChannels(channels);
+        
+        // Save with tag
+        const result = await saveChannels(channels, `direct_${tag}`);
+        console.log(`Saved direct stream with tag: ${result.tag}`);
+        
         setPlaylist(channels);
         setStage('playlist');
       } else {
@@ -170,11 +307,17 @@ export default function App() {
         
         const channels = parseM3U(res.data);
         if (channels.length > 0) {
-          await saveChannels(channels);
+          // Save with tag
+          const result = await saveChannels(channels, tag);
+          console.log(`Saved ${result.count} channels with tag: ${result.tag}`);
         }
         setPlaylist(channels);
         setStage('playlist');
       }
+      
+      // Refresh the saved playlists list
+      const playlists = await getAllPlaylists();
+      setSavedPlaylists(playlists);
     } catch (e) {
       console.error('M3U fetch failed:', e);
       
@@ -211,6 +354,14 @@ export default function App() {
         <VideoPlayer
           url={currentUrl}
           onBack={() => setStage('playlist')}
+          onError={(errorDetails) => {
+            // Show an alert with the error details
+            Alert.alert(
+              'Stream Error',
+              `Unable to play this stream: ${errorDetails}`,
+              [{ text: 'Back to Channels', onPress: () => setStage('playlist') }]
+            );
+          }}
         />
       )}
     </View>
@@ -231,14 +382,50 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#555'
   },
+  loadingBackButtonContainer: {
+    marginTop: 20,
+    width: '50%'
+  },
   sourceContainer: {
     padding: 20, 
     marginTop: 40
   },
   sourceTitle: {
-    fontSize: 16, 
-    marginBottom: 10,
-    fontWeight: '500'
+    fontSize: 18, 
+    marginBottom: 15,
+    fontWeight: '600'
+  },
+  playlistItem: {
+    backgroundColor: '#f8f8f8',
+    padding: 15,
+    marginVertical: 5,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#007bff',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2
+  },
+  playlistItemExpired: {
+    borderLeftColor: '#ff9800',
+    backgroundColor: '#fff9e6'
+  },
+  playlistName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333'
+  },
+  playlistAge: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 5
+  },
+  buttonContainer: {
+    marginTop: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between'
   }
 });
 

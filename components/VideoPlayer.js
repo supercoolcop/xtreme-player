@@ -4,10 +4,19 @@ import { Video } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { normalizeVideoUrl } from '../utils/streamUtils';
 
-export default function VideoPlayer({ url, onBack }) {
+export default function VideoPlayer({ url, onBack, onError }) {
   // Validate input URL
   if (!url) {
     console.error('VideoPlayer: No URL provided');
+    onError && onError('No URL provided');
+    return (
+      <View style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>Error: No URL provided</Text>
+          <Button title="Back to Playlist" onPress={onBack} />
+        </View>
+      </View>
+    );
   }
   
   const fallbackUrl = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
@@ -102,6 +111,11 @@ export default function VideoPlayer({ url, onBack }) {
         case -11803:
           detailedError = 'Protocol error. Make sure both HTTP and HTTPS URLs are allowed in your Info.plist.';
           break;
+        case 1:
+        case 2:
+        case 3:
+          detailedError = 'Stream format unsupported or requires additional configuration.';
+          break;
         default:
           detailedError = `Error ${errorCode}: ${errorMessage}`;
       }
@@ -109,27 +123,48 @@ export default function VideoPlayer({ url, onBack }) {
     
     setErrorDetails(detailedError);
     
-    // Increment load attempts
-    const newAttempts = loadAttempts + 1;
-    setLoadAttempts(newAttempts);
-    
-    // Try alternative URL format first
-    const alternativeUrl = tryAlternativeUrlFormats(currentUrl);
-    if (!attemptedFallback && alternativeUrl && newAttempts <= 1) {
-      console.log('Trying alternative URL format:', alternativeUrl);
-      setCurrentUrl(alternativeUrl);
-      setWaiting(true);
-      return;
-    }
-    
-    // Then try fallback if we haven't yet
-    if (!attemptedFallback && !waiting && newAttempts <= MAX_LOAD_ATTEMPTS) {
-      console.log('Trying fallback URL:', fallbackUrl);
-      setCurrentUrl(fallbackUrl);
-      setAttemptedFallback(true);
-      setWaiting(true);
+    // Add more aggressive retry logic for specific error types
+    if (errorCode === -11800 || errorCode === -11801) {
+      // Network or timeout errors - retry with shorter timeout
+      console.log('Network-related error, attempting quick retry...');
+      const newAttempts = loadAttempts + 1;
+      setLoadAttempts(newAttempts);
+      
+      if (newAttempts <= MAX_LOAD_ATTEMPTS) {
+        setTimeout(() => {
+          console.log(`Quick retry attempt ${newAttempts}/${MAX_LOAD_ATTEMPTS}`);
+          // Force a reload of the video with the same URL
+          const currentVideoUrl = currentUrl;
+          setCurrentUrl('');
+          setTimeout(() => setCurrentUrl(currentVideoUrl), 50);
+        }, 1000); // Quick 1-second retry for network issues
+        return;
+      }
     } else {
-      setError(true);
+      // For other errors, follow the standard error handling path
+      // Increment load attempts
+      const newAttempts = loadAttempts + 1;
+      setLoadAttempts(newAttempts);
+      
+      // Try alternative URL format first
+      const alternativeUrl = tryAlternativeUrlFormats(currentUrl);
+      if (!attemptedFallback && alternativeUrl && newAttempts <= 1) {
+        console.log('Trying alternative URL format:', alternativeUrl);
+        setCurrentUrl(alternativeUrl);
+        setWaiting(true);
+        return;
+      }
+      
+      // Then try fallback if we haven't yet
+      if (!attemptedFallback && !waiting && newAttempts <= MAX_LOAD_ATTEMPTS) {
+        console.log('Trying fallback URL:', fallbackUrl);
+        setCurrentUrl(fallbackUrl);
+        setAttemptedFallback(true);
+        setWaiting(true);
+      } else {
+        setError(true);
+        onError && onError(detailedError);
+      }
     }
   };
 
@@ -233,13 +268,19 @@ export default function VideoPlayer({ url, onBack }) {
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color="#007bff" />
               <Text style={styles.loadingText}>
-                Waiting for stream to start (up to 5 min)...
+                Connecting to stream...
               </Text>
               {loadAttempts > 0 && (
                 <Text style={styles.loadingText}>
                   Attempt {loadAttempts}/{MAX_LOAD_ATTEMPTS}
                 </Text>
               )}
+              <View style={styles.loadingBackButton}>
+                <Button title="Back to Channels" onPress={onBack} />
+              </View>
+              <Text style={styles.loadingHint}>
+                Note: Some streams may take time to load. If loading takes too long, try another channel.
+              </Text>
             </View>
           )}
 
@@ -319,6 +360,19 @@ const styles = StyleSheet.create({
     fontSize: 12, 
     marginTop: 5, 
     color: '#555'
+  },
+  loadingHint: {
+    fontSize: 11,
+    marginTop: 10,
+    color: '#777',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    paddingHorizontal: 20
+  },
+  loadingBackButton: {
+    marginTop: 15,
+    marginBottom: 5,
+    width: '80%'
   },
   controlsContainer: {
     flexDirection: 'row', 
