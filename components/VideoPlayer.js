@@ -102,6 +102,11 @@ export default function VideoPlayer({ url, onBack }) {
         case -11803:
           detailedError = 'Protocol error. Make sure both HTTP and HTTPS URLs are allowed in your Info.plist.';
           break;
+        case 1:
+        case 2:
+        case 3:
+          detailedError = 'Stream format unsupported or requires additional configuration.';
+          break;
         default:
           detailedError = `Error ${errorCode}: ${errorMessage}`;
       }
@@ -109,27 +114,47 @@ export default function VideoPlayer({ url, onBack }) {
     
     setErrorDetails(detailedError);
     
-    // Increment load attempts
-    const newAttempts = loadAttempts + 1;
-    setLoadAttempts(newAttempts);
-    
-    // Try alternative URL format first
-    const alternativeUrl = tryAlternativeUrlFormats(currentUrl);
-    if (!attemptedFallback && alternativeUrl && newAttempts <= 1) {
-      console.log('Trying alternative URL format:', alternativeUrl);
-      setCurrentUrl(alternativeUrl);
-      setWaiting(true);
-      return;
-    }
-    
-    // Then try fallback if we haven't yet
-    if (!attemptedFallback && !waiting && newAttempts <= MAX_LOAD_ATTEMPTS) {
-      console.log('Trying fallback URL:', fallbackUrl);
-      setCurrentUrl(fallbackUrl);
-      setAttemptedFallback(true);
-      setWaiting(true);
+    // Add more aggressive retry logic for specific error types
+    if (errorCode === -11800 || errorCode === -11801) {
+      // Network or timeout errors - retry with shorter timeout
+      console.log('Network-related error, attempting quick retry...');
+      const newAttempts = loadAttempts + 1;
+      setLoadAttempts(newAttempts);
+      
+      if (newAttempts <= MAX_LOAD_ATTEMPTS) {
+        setTimeout(() => {
+          console.log(`Quick retry attempt ${newAttempts}/${MAX_LOAD_ATTEMPTS}`);
+          // Force a reload of the video with the same URL
+          const currentVideoUrl = currentUrl;
+          setCurrentUrl('');
+          setTimeout(() => setCurrentUrl(currentVideoUrl), 50);
+        }, 1000); // Quick 1-second retry for network issues
+        return;
+      }
     } else {
-      setError(true);
+      // For other errors, follow the standard error handling path
+      // Increment load attempts
+      const newAttempts = loadAttempts + 1;
+      setLoadAttempts(newAttempts);
+      
+      // Try alternative URL format first
+      const alternativeUrl = tryAlternativeUrlFormats(currentUrl);
+      if (!attemptedFallback && alternativeUrl && newAttempts <= 1) {
+        console.log('Trying alternative URL format:', alternativeUrl);
+        setCurrentUrl(alternativeUrl);
+        setWaiting(true);
+        return;
+      }
+      
+      // Then try fallback if we haven't yet
+      if (!attemptedFallback && !waiting && newAttempts <= MAX_LOAD_ATTEMPTS) {
+        console.log('Trying fallback URL:', fallbackUrl);
+        setCurrentUrl(fallbackUrl);
+        setAttemptedFallback(true);
+        setWaiting(true);
+      } else {
+        setError(true);
+      }
     }
   };
 
@@ -233,7 +258,7 @@ export default function VideoPlayer({ url, onBack }) {
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color="#007bff" />
               <Text style={styles.loadingText}>
-                Waiting for stream to start (up to 5 min)...
+                Connecting to stream...
               </Text>
               {loadAttempts > 0 && (
                 <Text style={styles.loadingText}>

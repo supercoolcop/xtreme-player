@@ -66,7 +66,21 @@ export const normalizeVideoUrl = (url) => {
     // Some players might need special handling for TS streams
     console.log('TS stream detected, using special handling');
     // You might need to adjust this based on your player's capabilities
-    return normalizedUrl.replace('output=ts', 'output=m3u8');
+    return normalizedUrl;  // Keep original format, don't convert to m3u8
+  }
+  
+  // Check for other common stream patterns
+  if (normalizedUrl.includes('/play/') || 
+      normalizedUrl.includes('stream=') || 
+      normalizedUrl.includes('/live/')) {
+    console.log('Stream URL detected, ensuring format compatibility');
+    return normalizedUrl;
+  }
+  
+  // Handle direct video URLs
+  if (normalizedUrl.match(/\.(m3u8|mp4|ts|webm|mkv)($|\?)/i)) {
+    console.log('Direct video URL detected');
+    return normalizedUrl;
   }
   
   return normalizedUrl;
