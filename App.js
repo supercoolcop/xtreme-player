@@ -20,15 +20,18 @@ export default function App() {
   // Check network connectivity on app start
   useEffect(() => {
     const checkConnectivity = async () => {
-      const connected = await isConnected();
-      
-      if (!connected) {
-        Alert.alert(
-          "No Internet Connection",
-          "You're offline. Some features may not work properly. Cached channels will still be available.",
-          [{ text: "OK" }]
-        );
-      }
+      // Delay network check for more stable detection after app fully loads
+      setTimeout(async () => {
+        const connected = await isConnected();
+        
+        if (!connected) {
+          Alert.alert(
+            "No Internet Connection",
+            "You're offline. Some features may not work properly. Cached channels will still be available.",
+            [{ text: "OK" }]
+          );
+        }
+      }, 3000); // 3 second delay
     };
     
     checkConnectivity();
