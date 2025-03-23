@@ -63,9 +63,9 @@ export default function VideoPlayer({ url, onBack }) {
       return `${originalUrl}.m3u8`;
     }
     
-    // If URL has http://, try https://
-    if (originalUrl.startsWith('http://')) {
-      return originalUrl.replace('http://', 'https://');
+    // Keep original protocol (both http:// and https:// are supported)
+    if (originalUrl.startsWith('http://') || originalUrl.startsWith('https://')) {
+      return originalUrl;
     }
     
     // No alternative format available

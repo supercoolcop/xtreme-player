@@ -6,7 +6,8 @@ import NetInfo from '@react-native-community/netinfo';
  */
 export const isConnected = async () => {
   const state = await NetInfo.fetch();
-  return state.isConnected && state.isInternetReachable;
+  // Less strict check - consider connected if either basic connectivity exists or internet is reachable
+  return state.isConnected || state.isInternetReachable;
 };
 
 /**
@@ -16,7 +17,7 @@ export const isConnected = async () => {
  */
 export const subscribeToNetworkChanges = (callback) => {
   return NetInfo.addEventListener(state => {
-    const isConnected = state.isConnected && state.isInternetReachable;
+    const isConnected = state.isConnected || state.isInternetReachable;
     callback(isConnected);
   });
 };
