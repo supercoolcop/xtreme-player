@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { View, Button, Text, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { Video } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
+import { normalizeVideoUrl } from '../utils/streamUtils';
 
 export default function VideoPlayer({ url, onBack }) {
   // Validate input URL
@@ -22,10 +23,11 @@ export default function VideoPlayer({ url, onBack }) {
   const videoRef = useRef(null);
   const MAX_LOAD_ATTEMPTS = 3;
 
-  // Reset state when URL changes
+  // Then in your component:
   useEffect(() => {
     if (url) {
-      setCurrentUrl(url);
+      const processedUrl = normalizeVideoUrl(url);
+      setCurrentUrl(processedUrl);
       setAttemptedFallback(false);
       setError(false);
       setErrorDetails('');
@@ -143,21 +145,6 @@ export default function VideoPlayer({ url, onBack }) {
     }
   };
 
-  // In VideoPlayer.js, add this helper function:
-
-  const normalizeVideoUrl = (url) => {
-    if (!url) return url;
-    
-    // For direct TS streams, we might need to handle them differently
-    if (url.includes('output=ts')) {
-      // Some players might need special handling for TS streams
-      console.log('TS stream detected, using special handling');
-      // You might need to adjust this based on your player's capabilities
-      return url;
-    }
-    
-    return url;
-  };
 
   // Then in your VideoPlayer component, use it:
   useEffect(() => {

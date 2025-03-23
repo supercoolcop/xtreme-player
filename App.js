@@ -80,31 +80,30 @@ export default function App() {
     }
   };
 
-  const handleM3ULogin = async (url) => {
-    setLoading(true);
-    try {
-      // Normalize the URL to ensure it works with our player
-      const normalizedUrl = normalizeStreamUrl(url);
-      
-      // Log both URLs to help with debugging
-      console.log('Original URL:', url);
-      console.log('Normalized URL:', normalizedUrl);
-      
-      const res = await axios.get(normalizedUrl);
-      const channels = parseM3U(res.data);
-      if (channels.length > 0) {
-        await saveChannels(channels);
-      }
-      setPlaylist(channels);
-      setStage('playlist');
-    } catch (e) {
-      console.error('M3U fetch failed:', e.message);
-      alert('Error loading M3U playlist: ' + e.message);
+  // Then in your handleM3ULogin function:
+const handleM3ULogin = async (url) => {
+  setLoading(true);
+  try {
+    // Normalize the URL to ensure it works with our player
+    const normalizedUrl = normalizeStreamUrl(url);
+    
+    // Log both URLs to help with debugging
+    console.log('Original URL:', url);
+    console.log('Normalized URL:', normalizedUrl);
+    
+    const res = await axios.get(normalizedUrl);
+    const channels = parseM3U(res.data);
+    if (channels.length > 0) {
+      await saveChannels(channels);
     }
-    setLoading(false);
-  };
-  
-  
+    setPlaylist(channels);
+    setStage('playlist');
+  } catch (e) {
+    console.error('M3U fetch failed:', e.message);
+    alert('Error loading M3U playlist: ' + e.message);
+  }
+  setLoading(false);
+};  
   
 
   return (
