@@ -10,31 +10,28 @@ if [ ! -f "./app-store.json" ]; then
   exit 1
 fi
 
-# Load credentials from file
-APPLE_ID=$(grep -o '"appleId": *"[^"]*"' ./app-store.json | cut -d'"' -f4)
-ASC_APP_ID=$(grep -o '"ascAppId": *"[^"]*"' ./app-store.json | cut -d'"' -f4)
-APPLE_TEAM_ID=$(grep -o '"appleTeamId": *"[^"]*"' ./app-store.json | cut -d'"' -f4)
+# Validate credentials in app-store.json
+echo "Validating credentials in app-store.json..."
 
-# Check if credentials are valid
-if [ -z "$APPLE_ID" ]; then
-  echo "Error: Apple ID not found in app-store.json"
+# Check for appleId
+if ! grep -q '"appleId"' ./app-store.json; then
+  echo "Error: appleId not found in app-store.json"
   exit 1
 fi
 
-if [ -z "$ASC_APP_ID" ]; then
-  echo "Error: App Store Connect App ID not found in app-store.json"
+# Check for ascAppId
+if ! grep -q '"ascAppId"' ./app-store.json; then
+  echo "Error: ascAppId not found in app-store.json"
   exit 1
 fi
 
-if [ -z "$APPLE_TEAM_ID" ]; then
-  echo "Error: Apple Team ID not found in app-store.json"
+# Check for teamId
+if ! grep -q '"teamId"' ./app-store.json; then
+  echo "Error: teamId not found in app-store.json"
   exit 1
 fi
 
-# Export environment variables
-export EXPO_APPLE_ID="$APPLE_ID"
-export EXPO_ASC_APP_ID="$ASC_APP_ID"
-export EXPO_APPLE_TEAM_ID="$APPLE_TEAM_ID"
+echo "Credentials validation successful!"
 
 # Run prebuild to generate native projects
 echo "Running prebuild to generate native projects..."
@@ -42,6 +39,7 @@ npx expo prebuild --clean
 
 # Build for iOS
 echo "Building for iOS..."
+echo "Using credentials from app-store.json..."
 eas build --platform ios --profile preview --non-interactive
 
 echo "Build process initiated. Check the EAS dashboard for build status."

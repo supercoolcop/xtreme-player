@@ -9,31 +9,31 @@ if not exist ".\credentials\app-store.json" (
   exit /b 1
 )
 
-REM Load credentials from file using PowerShell
-for /f "tokens=*" %%a in ('powershell -Command "Get-Content .\credentials\app-store.json | ConvertFrom-Json | Select-Object -ExpandProperty appleId"') do set APPLE_ID=%%a
-for /f "tokens=*" %%a in ('powershell -Command "Get-Content .\credentials\app-store.json | ConvertFrom-Json | Select-Object -ExpandProperty ascAppId"') do set ASC_APP_ID=%%a
-for /f "tokens=*" %%a in ('powershell -Command "Get-Content .\credentials\app-store.json | ConvertFrom-Json | Select-Object -ExpandProperty teamId"') do set APPLE_TEAM_ID=%%a
+REM Validate credentials in app-store.json
+echo Validating credentials in app-store.json...
 
-REM Check if credentials are valid
-if "%APPLE_ID%"=="" (
-  echo Error: Apple ID not found in app-store.json
+REM Check for appleId using PowerShell
+powershell -Command "if (-not (Get-Content .\credentials\app-store.json | Select-String '\"appleId\"')) { exit 1 }" 
+if %ERRORLEVEL% NEQ 0 (
+  echo Error: appleId not found in app-store.json
   exit /b 1
 )
 
-if "%ASC_APP_ID%"=="" (
-  echo Error: App Store Connect App ID not found in app-store.json
+REM Check for ascAppId using PowerShell
+powershell -Command "if (-not (Get-Content .\credentials\app-store.json | Select-String '\"ascAppId\"')) { exit 1 }" 
+if %ERRORLEVEL% NEQ 0 (
+  echo Error: ascAppId not found in app-store.json
   exit /b 1
 )
 
-if "%APPLE_TEAM_ID%"=="" (
-  echo Error: Apple Team ID not found in app-store.json
+REM Check for teamId using PowerShell
+powershell -Command "if (-not (Get-Content .\credentials\app-store.json | Select-String '\"teamId\"')) { exit 1 }" 
+if %ERRORLEVEL% NEQ 0 (
+  echo Error: teamId not found in app-store.json
   exit /b 1
 )
 
-REM Export environment variables
-set EXPO_APPLE_ID=%APPLE_ID%
-set EXPO_ASC_APP_ID=%ASC_APP_ID%
-set EXPO_APPLE_TEAM_ID=%APPLE_TEAM_ID%
+echo Credentials validation successful!
 
 REM Run prebuild to generate native projects
 echo Running prebuild to generate native projects...
@@ -41,6 +41,7 @@ call npx expo prebuild --clean
 
 REM Build for iOS
 echo Building for iOS...
+echo Using credentials from app-store.json...
 call eas build --platform ios --profile preview --non-interactive
 
 echo Build process initiated. Check the EAS dashboard for build status.
