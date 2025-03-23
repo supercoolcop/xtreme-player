@@ -19,7 +19,11 @@
       "bundleIdentifier": "org.blcharity.xtreamiptvplayer",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": []
+        "UIBackgroundModes": [],
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSAllowsArbitraryLoadsInMedia": true
+        }
       },
       "entitlements": {
         "aps-environment": "development"
