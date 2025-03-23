@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Button, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 
 import LoginForm from './components/LoginForm';
 import Playlist from './components/Playlist';
@@ -8,6 +8,7 @@ import axios from 'axios';
 import { parseM3U } from './utils/m3uParser';
 import { saveChannels, loadChannels } from './utils/storage';
 import { normalizeStreamUrl } from './utils/streamUtils';
+import { isConnected, subscribeToNetworkChanges } from './utils/networkUtils';
 
 export default function App() {
   const [stage, setStage] = useState('login'); // login | playlist | player
@@ -15,6 +16,37 @@ export default function App() {
   const [currentUrl, setCurrentUrl] = useState(null);
   const [askSource, setAskSource] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  // Check network connectivity on app start
+  useEffect(() => {
+    const checkConnectivity = async () => {
+      const connected = await isConnected();
+      
+      if (!connected) {
+        Alert.alert(
+          "No Internet Connection",
+          "You're offline. Some features may not work properly. Cached channels will still be available.",
+          [{ text: "OK" }]
+        );
+      }
+    };
+    
+    checkConnectivity();
+    
+    // Subscribe to network changes
+    const unsubscribe = subscribeToNetworkChanges((connected) => {
+      if (!connected) {
+        Alert.alert(
+          "Connection Lost",
+          "You're now offline. Some features may not work properly.",
+          [{ text: "OK" }]
+        );
+      }
+    });
+    
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const checkCache = async () => {

@@ -74,7 +74,33 @@ export default function VideoPlayer({ url, onBack }) {
 
   const handleVideoError = (e) => {
     console.warn('❌ Video error:', e);
-    setErrorDetails(e.error?.message || 'Unknown playback error');
+    
+    // Get detailed error information
+    const errorCode = e.error?.code || '';
+    const errorMessage = e.error?.message || 'Unknown playback error';
+    
+    // Interpret common error codes
+    let detailedError = errorMessage;
+    if (errorCode) {
+      switch (errorCode) {
+        case -11800:
+          detailedError = 'Network connection error. Please check your internet connection.';
+          break;
+        case -11828:
+          detailedError = 'Stream format not supported by this device.';
+          break;
+        case -11850:
+          detailedError = 'Stream not found or access denied. The URL may be invalid.';
+          break;
+        case -11801:
+          detailedError = 'Timeout while loading stream. The server may be down.';
+          break;
+        default:
+          detailedError = `Error ${errorCode}: ${errorMessage}`;
+      }
+    }
+    
+    setErrorDetails(detailedError);
     
     // Increment load attempts
     const newAttempts = loadAttempts + 1;
