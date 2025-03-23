@@ -27,6 +27,8 @@ export default function VideoPlayer({ url, onBack }) {
   useEffect(() => {
     if (url) {
       const processedUrl = normalizeVideoUrl(url);
+      console.log('Original video URL:', url);
+      console.log('Processed video URL:', processedUrl);
       setCurrentUrl(processedUrl);
       setAttemptedFallback(false);
       setError(false);
@@ -94,6 +96,10 @@ export default function VideoPlayer({ url, onBack }) {
           break;
         case -11801:
           detailedError = 'Timeout while loading stream. The server may be down.';
+          break;
+        // Add specific error for HTTP/HTTPS issues
+        case -11803:
+          detailedError = 'Protocol error. Make sure both HTTP and HTTPS URLs are allowed in your Info.plist.';
           break;
         default:
           detailedError = `Error ${errorCode}: ${errorMessage}`;
