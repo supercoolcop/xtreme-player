@@ -1,215 +1,315 @@
-// components/LoginForm.js
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  StyleSheet 
-} from 'react-native';
-import { normalizeStreamUrl } from '../utils/streamUtils';
+import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function LoginForm({ onM3ULogin, onXtreamLogin }) {
-  const [m3uUrl, setM3uUrl] = useState('');
+export default function LoginForm({ onXtreamLogin, onM3ULogin, onDirectUrlPlay, onBack }) {
+  const [loginType, setLoginType] = useState('xtream'); // xtream | m3u | direct
   const [host, setHost] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [m3uUrl, setM3uUrl] = useState('');
+  const [directUrl, setDirectUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleM3ULogin = async (url) => {
-    if (!url) {
-      alert('Please enter a valid M3U URL');
+  const handleXtreamSubmit = async () => {
+    if (!host) {
+      Alert.alert('Error', 'Please enter a host URL');
       return;
     }
     
-    // Basic URL format validation
-    try {
-      // Normalize URL before validation attempt
-      let testUrl = url;
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        testUrl = 'http://' + url;
-      }
-      new URL(testUrl); // Will throw if URL is invalid
-    } catch (error) {
-      alert('Invalid URL format. Please enter a valid URL.');
+    if (!username || !password) {
+      Alert.alert('Error', 'Please enter both username and password');
       return;
     }
     
-    setLoading(true);
-    try {
-      await onM3ULogin(url);
-    } catch (error) {
-      console.error('M3U login error:', error);
-      alert('Error loading M3U playlist: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleXtreamLogin = async () => {
-    if (!host || !username || !password) {
-      alert('Please fill in all Xtream Codes fields');
-      return;
-    }
-    
-    setLoading(true);
+    setIsLoading(true);
     try {
       await onXtreamLogin({ host, username, password });
     } catch (error) {
-      console.error('Xtream login error:', error);
-      alert('Error logging in: ' + error.message);
+      console.error('Login error:', error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
+  const handleM3USubmit = async () => {
+    if (!m3uUrl) {
+      Alert.alert('Error', 'Please enter an M3U URL');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      await onM3ULogin(m3uUrl);
+    } catch (error) {
+      console.error('M3U load error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDirectUrlSubmit = () => {
+    if (!directUrl) {
+      Alert.alert('Error', 'Please enter a direct stream URL');
+      return;
+    }
+    
+    onDirectUrlPlay(directUrl);
+  };
+
+  const handleTestUrlSubmit = () => {
+    const testUrl = 'http://sample.vodobox.net/skate_phantom_flex_4k/skate_phantom_flex_4k.m3u8';
+    setDirectUrl(testUrl);
+    onDirectUrlPlay(testUrl);
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>M3U Stream Login</Text>
-        
-        <TextInput
-          style={styles.input}
-          placeholder="Enter M3U URL"
-          placeholderTextColor="#999"
-          value={m3uUrl}
-          onChangeText={setM3uUrl}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={() => handleM3ULogin(m3uUrl)}
-          disabled={loading}
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      <Text style={styles.title}>IPTV Xtream Player</Text>
+      
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, loginType === 'xtream' && styles.activeTab]}
+          onPress={() => setLoginType('xtream')}
         >
-          {loading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={styles.buttonText}>Login with M3U</Text>
-          )}
+          <Ionicons 
+            name="key-outline" 
+            size={20} 
+            color={loginType === 'xtream' ? "#2196F3" : "#777"} 
+          />
+          <Text style={[styles.tabText, loginType === 'xtream' && styles.activeTabText]}>
+            Xtream Login
+          </Text>
         </TouchableOpacity>
         
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>OR</Text>
-          <View style={styles.dividerLine} />
-        </View>
-        
-        <Text style={styles.subtitle}>Xtream Codes Login</Text>
-        
-        <TextInput
-          style={styles.input}
-          placeholder="Host (e.g., http://example.com)"
-          placeholderTextColor="#999"
-          value={host}
-          onChangeText={setHost}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        
-        <TextInput
-          style={styles.input}
-          placeholder="Username"
-          placeholderTextColor="#999"
-          value={username}
-          onChangeText={setUsername}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#999"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-        
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={handleXtreamLogin}
-          disabled={loading}
+        <TouchableOpacity
+          style={[styles.tab, loginType === 'm3u' && styles.activeTab]}
+          onPress={() => setLoginType('m3u')}
         >
-          {loading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={styles.buttonText}>Login with Xtream Codes</Text>
-          )}
+          <Ionicons 
+            name="list-outline" 
+            size={20} 
+            color={loginType === 'm3u' ? "#2196F3" : "#777"} 
+          />
+          <Text style={[styles.tabText, loginType === 'm3u' && styles.activeTabText]}>
+            M3U URL
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.tab, loginType === 'direct' && styles.activeTab]}
+          onPress={() => setLoginType('direct')}
+        >
+          <Ionicons 
+            name="play-outline" 
+            size={20} 
+            color={loginType === 'direct' ? "#2196F3" : "#777"} 
+          />
+          <Text style={[styles.tabText, loginType === 'direct' && styles.activeTabText]}>
+            Direct URL
+          </Text>
         </TouchableOpacity>
       </View>
-    </View>
+      
+      {loginType === 'xtream' && (
+        <View style={styles.formContainer}>
+          <Text style={styles.label}>Host URL</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g., iptv-provider.com"
+            value={host}
+            onChangeText={setHost}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          
+          <Text style={styles.label}>Username</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter username"
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          
+          <View style={styles.buttonContainer}>
+            <Button
+              title="Connect"
+              onPress={handleXtreamSubmit}
+              disabled={isLoading}
+            />
+          </View>
+          
+          <Text style={styles.helpText}>
+            Enter your Xtream API credentials provided by your IPTV service.
+          </Text>
+        </View>
+      )}
+      
+      {loginType === 'm3u' && (
+        <View style={styles.formContainer}>
+          <Text style={styles.label}>M3U Playlist URL</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="http://example.com/playlist.m3u"
+            value={m3uUrl}
+            onChangeText={setM3uUrl}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          
+          <View style={styles.buttonContainer}>
+            <Button
+              title="Load Playlist"
+              onPress={handleM3USubmit}
+              disabled={isLoading}
+            />
+          </View>
+          
+          <Text style={styles.helpText}>
+            Enter the URL of an M3U playlist file to load all channels.
+          </Text>
+        </View>
+      )}
+      
+      {loginType === 'direct' && (
+        <View style={styles.formContainer}>
+          <Text style={styles.label}>Direct Stream URL</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="http://example.com/stream.m3u8"
+            value={directUrl}
+            onChangeText={setDirectUrl}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          
+          <View style={styles.buttonContainer}>
+            <Button
+              title="Play Stream"
+              onPress={handleDirectUrlSubmit}
+            />
+          </View>
+          
+          <View style={styles.buttonContainer}>
+            <Button
+              title="Play Test Stream"
+              onPress={handleTestUrlSubmit}
+              color="#4CAF50"
+            />
+          </View>
+          
+          <Text style={styles.helpText}>
+            Enter a direct stream URL (m3u8, mp4, etc.) to play immediately.
+            The test stream button will play the sample URL: http://sample.vodobox.net/skate_phantom_flex_4k/skate_phantom_flex_4k.m3u8
+          </Text>
+        </View>
+      )}
+      
+      {onBack && (
+        <View style={styles.backButtonContainer}>
+          <Button title="Back" onPress={onBack} color="#777" />
+        </View>
+      )}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f5f5f5'
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
+  contentContainer: {
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingTop: 40
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2196F3',
     marginBottom: 20,
     textAlign: 'center',
+    color: '#2196F3'
   },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2196F3',
-    marginBottom: 15,
-    marginTop: 10,
+  tabContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    overflow: 'hidden'
   },
-  input: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 5,
-    padding: 15,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: '#2196F3',
-    borderRadius: 5,
-    padding: 15,
-    alignItems: 'center',
-    marginTop: 5,
-    marginBottom: 15,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  divider: {
+  tab: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
+    justifyContent: 'center',
+    paddingVertical: 12,
+    backgroundColor: '#fff'
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#e0e0e0',
+  activeTab: {
+    backgroundColor: '#f0f7ff',
+    borderBottomWidth: 2,
+    borderBottomColor: '#2196F3'
   },
-  dividerText: {
-    marginHorizontal: 10,
-    color: '#999',
+  tabText: {
+    marginLeft: 5,
+    fontSize: 12,
+    color: '#777'
+  },
+  activeTabText: {
+    color: '#2196F3',
+    fontWeight: 'bold'
+  },
+  formContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2
+  },
+  label: {
     fontSize: 14,
+    marginBottom: 5,
+    color: '#555'
   },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 15,
+    fontSize: 16
+  },
+  buttonContainer: {
+    marginBottom: 10
+  },
+  helpText: {
+    fontSize: 12,
+    color: '#777',
+    marginTop: 10,
+    fontStyle: 'italic'
+  },
+  backButtonContainer: {
+    marginTop: 20
+  }
 });
-
